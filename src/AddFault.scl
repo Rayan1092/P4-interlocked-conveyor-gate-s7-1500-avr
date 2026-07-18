@@ -1,0 +1,78 @@
+﻿FUNCTION_BLOCK "AddFault"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      faultTest : Bool;
+      faultC : Bool;
+      faultIDC : Int;
+      faultIDTest : Int;
+      faultIDM : Int;
+      faultM : Bool;
+   END_VAR
+
+   VAR 
+      prevFaultTest : Bool := false;
+      Index : Int := 0;
+      prevFaultIDC : Int;
+      prevFaultC : Bool;
+      prevFaultIDTest : Int;
+      latestFaultID : Int := -1;
+      latestFaultSys : Int := -1;
+      prevfaultIDM : Int;
+      prevfaultM : Bool;
+   END_VAR
+
+
+BEGIN
+	IF #prevFaultTest = FALSE AND #faultTest = TRUE OR NOT (#prevFaultIDTest = #faultIDTest) THEN
+	    "FaultLogs"."THIS"[#Index].SensID := #faultIDTest;
+	    "FaultLogs"."THIS"[#Index].System := 1;
+	    
+	    #latestFaultID := #faultIDTest;
+	    #latestFaultSys := 1;
+	    
+	    #Index := #Index + 1;
+	    
+	    IF #Index > 19 THEN
+	        #Index := 0;
+	    END_IF;
+	END_IF;
+	
+	
+	IF #prevfaultM = FALSE AND #faultM = TRUE OR NOT (#prevfaultIDM = #faultIDM) THEN
+	    "FaultLogs"."THIS"[#Index].SensID := #faultIDM;
+	    "FaultLogs"."THIS"[#Index].System := 2;
+	    
+	    #latestFaultID := #faultIDM;
+	    #latestFaultSys := 2;
+	    
+	    #Index := #Index + 1;
+	    
+	    IF #Index > 19 THEN
+	        #Index := 0;
+	    END_IF;
+	END_IF;
+	
+	IF #prevFaultC = FALSE AND #faultC = TRUE OR NOT (#prevFaultIDC = #faultIDC) THEN
+	    "FaultLogs"."THIS"[#Index].SensID := #faultIDC;
+	    "FaultLogs"."THIS"[#Index].System := 2;
+	    
+	    #latestFaultID := #faultIDC;
+	    #latestFaultSys := 0;
+	    
+	    #Index := #Index + 1;
+	    
+	    IF #Index > 19 THEN
+	        #Index := 0;
+	    END_IF;
+	END_IF;
+	
+	#prevFaultTest := #faultTest;
+	#prevFaultIDTest := #faultIDTest;
+	#prevFaultC := #faultC;
+	#prevFaultIDC := #faultIDC;
+	#prevfaultM := #faultM;
+	#prevfaultIDM := #faultIDM;
+	
+END_FUNCTION_BLOCK
+

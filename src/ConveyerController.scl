@@ -1,0 +1,154 @@
+﻿FUNCTION_BLOCK "ConveyerController"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_OUTPUT 
+      fault : Bool;
+      faultID : Int;
+   END_VAR
+
+   VAR 
+      stateInternal : Int;
+      stateExternal : Int;
+      prevStartCMD : Bool;
+      prevStopCMD : Bool;
+      wireTONIN : Bool;
+      excuted : Bool;
+   END_VAR
+
+
+BEGIN
+	IF #prevStartCMD = FALSE AND "startCMD" = TRUE AND #stateInternal = 0 AND "manualMode" = FALSE THEN
+	    #stateExternal := 1;
+	    #stateInternal := 1;
+	END_IF;
+	
+	IF #prevStopCMD = FALSE AND "stopCMD" = TRUE AND #stateInternal = 0 AND "manualMode" = FALSE THEN
+	    #stateExternal := 2;
+	    #stateInternal := 1;
+	END_IF;
+	
+	
+	CASE #stateExternal OF
+	    1:
+	        CASE #stateInternal OF
+	            1:
+	                "data" := TRUE;
+	                "strobe" := TRUE;
+	                #wireTONIN := TRUE;
+	                
+	                "dataStrobeWireTON".TON(IN := #wireTONIN,
+	                                        PT := T#100ms);
+	                
+	                IF "ackWire" = TRUE THEN
+	                    #excuted := TRUE;
+	                END_IF;
+	                
+	                
+	                IF "dataStrobeWireTON".Q = TRUE THEN
+	                    "data" := FALSE;
+	                    "strobe" := FALSE;
+	                    #wireTONIN := FALSE;
+	                    #stateInternal := 2;
+	                END_IF;
+	            2:
+	                IF #excuted = FALSE THEN
+	                    #faultID := 5;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	                    
+	                ELSIF BOOL_TO_INT("limitSwitchVal") + BOOL_TO_INT(NOT "ultraVal") = 2 THEN
+	                    #fault := FALSE;
+	                    #stateInternal := 3;
+	                    
+	                ELSIF BOOL_TO_INT("limitSwitchVal") + BOOL_TO_INT(NOT "ultraVal") = 0 THEN
+	                    #faultID := 4;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	                    
+	                    
+	                ELSIF "limitSwitchVal" = FALSE THEN
+	                    #faultID := 1;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	                    
+	                    
+	                ELSIF "ultraVal" = TRUE THEN
+	                    #faultID := 3;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	                    
+	                END_IF;
+	            3:
+	                "relaySignal" := TRUE;
+	                #excuted := FALSE;
+	                #stateInternal := 0;
+	                #stateExternal := 0;
+	        END_CASE;
+	        
+	        
+	    2:
+	        "relaySignal" := FALSE;
+	        CASE #stateInternal OF
+	            1:
+	                "data" := FALSE;
+	                "strobe" := TRUE;
+	                #wireTONIN := TRUE;
+	                
+	                "dataStrobeWireTON".TON(IN := #wireTONIN,
+	                                        PT := T#100ms);
+	                
+	                IF "ackWire" = TRUE THEN
+	                    #excuted := TRUE;
+	                END_IF;
+	                
+	                
+	                IF "dataStrobeWireTON".Q = TRUE THEN
+	                    "data" := FALSE;
+	                    "strobe" := FALSE;
+	                    #wireTONIN := FALSE;
+	                    #stateInternal := 2;
+	                END_IF;
+	            2:
+	                IF #excuted = FALSE THEN
+	                    #faultID := 5;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	                    
+	                ELSIF BOOL_TO_INT(NOT "limitSwitchVal") + BOOL_TO_INT("ultraVal") = 2 THEN
+	                    #fault := FALSE;
+	                    #stateInternal := 3;
+	                    
+	                ELSIF BOOL_TO_INT(NOT "limitSwitchVal") + BOOL_TO_INT("ultraVal") = 0 THEN
+	                    #faultID := 4;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	                    
+	                ELSIF "limitSwitchVal" = TRUE THEN
+	                    #faultID := 1;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	
+	                ELSIF "ultraVal" = FALSE THEN
+	                    #faultID := 3;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	                END_IF;
+	            3:
+	                #excuted := FALSE;
+	                #stateInternal := 0;
+	                #stateExternal := 0;
+	        END_CASE;
+	END_CASE;
+	
+	#prevStopCMD := "stopCMD";
+	#prevStartCMD := "startCMD";
+END_FUNCTION_BLOCK
+

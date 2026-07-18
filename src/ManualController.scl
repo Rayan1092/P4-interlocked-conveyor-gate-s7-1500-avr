@@ -1,0 +1,135 @@
+﻿FUNCTION_BLOCK "ManualController"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_OUTPUT 
+      fault : Bool;
+      faultID : Int := -1;
+   END_VAR
+
+   VAR 
+      prevMoveHomeCMD : Bool;
+      prevCloseCMD : Bool;
+      prevconveyorSignal : Bool;
+      state : Int;
+      wireTONIN : Bool;
+      excuted : Bool;
+   END_VAR
+
+
+BEGIN
+	IF "manualMode" = TRUE THEN
+	    IF #prevMoveHomeCMD = FALSE AND "moveServoHome" = TRUE THEN
+	        CASE #state OF
+	            1:
+	                "data" := TRUE;
+	                "strobe" := TRUE;
+	                #wireTONIN := TRUE;
+	                
+	                "dataStrobeWireTON".TON(IN := #wireTONIN,
+	                                        PT := T#100ms);
+	                
+	                IF "ackWire" = TRUE THEN
+	                    #excuted := TRUE;
+	                END_IF;
+	                
+	                
+	                IF "dataStrobeWireTON".Q = TRUE THEN
+	                    "data" := FALSE;
+	                    "strobe" := FALSE;
+	                    #wireTONIN := FALSE;
+	                    #state := 2;
+	                END_IF;
+	            2:
+	                IF #excuted = FALSE THEN
+	                    #faultID := 5;
+	                    #fault := TRUE;
+	                    #state := 0;
+	                    
+	                ELSIF BOOL_TO_INT("limitSwitchVal") + BOOL_TO_INT(NOT "ultraVal") = 2 THEN
+	                    #fault := FALSE;
+	                    #state := 3;
+	                    
+	                ELSIF BOOL_TO_INT("limitSwitchVal") + BOOL_TO_INT(NOT "ultraVal") = 0 THEN
+	                    #faultID := 4;
+	                    #fault := TRUE;
+	                    #state := 0;
+	                    
+	                ELSIF "limitSwitchVal" = FALSE THEN
+	                    #faultID := 1;
+	                    #fault := TRUE;
+	                    #state := 0;
+	                    
+	                    
+	                ELSIF "ultraVal" = TRUE THEN
+	                    #faultID := 3;
+	                    #fault := TRUE;
+	                    #state := 0;
+	                    
+	                END_IF;
+	            3:
+	                #excuted := FALSE;
+	                #state := 0;
+	        END_CASE;
+	    END_IF;
+	    
+	    IF #prevCloseCMD = FALSE AND "moveServoHome" = TRUE THEN
+	        CASE #state OF
+	            1:
+	                "data" := FALSE;
+	                "strobe" := TRUE;
+	                #wireTONIN := TRUE;
+	                
+	                "dataStrobeWireTON".TON(IN := #wireTONIN,
+	                                        PT := T#100ms);
+	                
+	                IF "ackWire" = TRUE THEN
+	                    #excuted := TRUE;
+	                END_IF;
+	                
+	                
+	                IF "dataStrobeWireTON".Q = TRUE THEN
+	                    "data" := FALSE;
+	                    "strobe" := FALSE;
+	                    #wireTONIN := FALSE;
+	                    #state := 2;
+	                END_IF;
+	            2:
+	                IF #excuted = FALSE THEN
+	                    #faultID := 5;
+	                    #fault := TRUE;
+	                    #state := 0;
+	                    
+	                ELSIF BOOL_TO_INT(NOT "limitSwitchVal") + BOOL_TO_INT("ultraVal") = 2 THEN
+	                    #fault := FALSE;
+	                    #state := 3;
+	                    
+	                ELSIF BOOL_TO_INT(NOT "limitSwitchVal") + BOOL_TO_INT("ultraVal") = 0 THEN
+	                    #faultID := 4;
+	                    #fault := TRUE;
+	                    #state := 0;
+	                    
+	                ELSIF "limitSwitchVal" = TRUE THEN
+	                    #faultID := 1;
+	                    #fault := TRUE;
+	                    #state := 0;
+	                    
+	                    
+	                ELSIF "ultraVal" = FALSE THEN
+	                    #faultID := 3;
+	                    #fault := TRUE;
+	                    #state := 0;
+	                    
+	                END_IF;
+	            3:
+	                #excuted := FALSE;
+	                #state := 0;
+	        END_CASE;
+	    END_IF;
+	    
+	    IF #prevconveyorSignal = FALSE AND "conveyorToggle" = TRUE THEN
+	        "relaySignal" := NOT "relaySignal";
+	    END_IF;
+	END_IF;
+	        
+END_FUNCTION_BLOCK
+

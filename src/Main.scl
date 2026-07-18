@@ -1,0 +1,41 @@
+﻿ORGANIZATION_BLOCK "Main"
+TITLE = "Main Program Sweep (Cycle)"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      faultIDtest : Int;
+      testPassMain : Bool;
+      faultTest : Bool;
+      faultIDC : Int;
+      faultC : Bool;
+      faultIDM : Int;
+      faultM : Bool;
+   END_VAR
+
+
+BEGIN
+	"TestFunctionality_DB"(faultID=>#faultIDtest,
+	                       passed=>#testPassMain,
+	                       fault=>#faultTest);
+	
+	
+	"ConveyerController_DB"(fault=>#faultC,
+	                        faultID=>#faultIDC);
+	"AddFault_DB"(faultTest:=#faultTest,
+	              faultC:=#faultC,
+	              faultIDC:=#faultIDC,
+	              faultIDTest:=#faultIDtest,
+	              faultIDM:=#faultIDM,
+	              faultM:=#faultM);
+	
+	
+	
+	
+	"ManualController_DB"(fault=>#faultM,
+	                      faultID=>#faultIDM);
+	
+	
+	"ReadServoPos"();
+	
+END_ORGANIZATION_BLOCK
+

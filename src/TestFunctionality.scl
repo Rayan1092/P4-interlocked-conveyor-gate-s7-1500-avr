@@ -1,0 +1,140 @@
+﻿FUNCTION_BLOCK "TestFunctionality"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_OUTPUT 
+      faultID : Int;
+      passed : Bool;
+      fault : Bool;
+   END_VAR
+
+   VAR 
+      stateExternal : Int;
+      stateInternal : Int;
+      prevTestFunction : Bool;
+      wireTONIN : Bool;
+      excuted : Bool;
+      ArduinoCOM : Int := -1;
+   END_VAR
+
+
+BEGIN
+	IF #prevTestFunction = FALSE AND "testFunction" = TRUE THEN
+	    #stateExternal := 1;
+	    #stateInternal := 1;
+	    #passed := FALSE;
+	END_IF;
+	
+	CASE #stateExternal OF
+	    1:
+	        CASE #stateInternal OF
+	            1:
+	                "data" := TRUE;
+	                "strobe" := TRUE;
+	                #wireTONIN := TRUE;
+	                
+	                "dataStrobeWireTON".TON(IN := #wireTONIN,
+	                                        PT := T#100ms);
+	                
+	                IF "ackWire" = TRUE THEN
+	                    #excuted := TRUE;
+	                END_IF;
+	                
+	                
+	                IF "dataStrobeWireTON".Q = TRUE THEN
+	                    "data" := FALSE;
+	                    "strobe" := FALSE;
+	                    #wireTONIN := FALSE;
+	                    #stateInternal := 2;
+	                END_IF;
+	            2:
+	                IF #excuted = TRUE THEN
+	                    #ArduinoCOM := 1;
+	                END_IF;
+	                
+	                IF #excuted = FALSE THEN
+	                    #faultID := 5;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	                    #ArduinoCOM := 0;
+	                    
+	                ELSIF BOOL_TO_INT("limitSwitchVal") + BOOL_TO_INT(NOT "ultraVal") = 2 THEN
+	                    #fault := FALSE;
+	                    #stateInternal := 3;
+	                    
+	                ELSIF BOOL_TO_INT("limitSwitchVal") + BOOL_TO_INT(NOT "ultraVal") = 0 THEN
+	                    #faultID := 4;
+	                    #fault := TRUE;
+	                    
+	                ELSIF "limitSwitchVal" = FALSE THEN
+	                    #faultID := 1;
+	                    #fault := TRUE;
+	
+	                ELSIF "ultraVal" = TRUE THEN
+	                    #faultID := 3;
+	                    #fault := TRUE;
+	                END_IF;
+	                
+	            3:
+	                "relaySignal" := TRUE;
+	                #excuted := FALSE;
+	                #stateInternal := 1;
+	                #stateExternal := 2;
+	        END_CASE;
+	        
+	        
+	    2:
+	        "relaySignal" := FALSE;
+	        CASE #stateInternal OF
+	            1:
+	                "data" := FALSE;
+	                "strobe" := TRUE;
+	                #wireTONIN := TRUE;
+	                
+	                "dataStrobeWireTON".TON(IN := #wireTONIN,
+	                                        PT := T#100ms);
+	                
+	                IF "ackWire" = TRUE THEN
+	                    #excuted := TRUE;
+	                END_IF;
+	                
+	                
+	                IF "dataStrobeWireTON".Q = TRUE THEN
+	                    "data" := FALSE;
+	                    "strobe" := FALSE;
+	                    #wireTONIN := FALSE;
+	                    #stateInternal := 2;
+	                END_IF;
+	            2:
+	                IF #excuted = FALSE THEN
+	                    #faultID := 5;
+	                    #fault := TRUE;
+	                    #stateInternal := 0;
+	                    #stateExternal := 0;
+	                    
+	                ELSIF BOOL_TO_INT(NOT "limitSwitchVal") + BOOL_TO_INT("ultraVal") = 2 THEN
+	                    #fault := FALSE;
+	                    #stateInternal := 3;
+	                    
+	                ELSIF BOOL_TO_INT(NOT "limitSwitchVal") + BOOL_TO_INT("ultraVal") = 0 THEN
+	                    #faultID := 4;
+	                    #fault := TRUE;
+	                    
+	                ELSIF "limitSwitchVal" = TRUE THEN
+	                    #faultID := 1;
+	                    #fault := TRUE;
+	
+	                ELSIF "ultraVal" = FALSE THEN
+	                    #faultID := 3;
+	                    #fault := TRUE;
+	                END_IF;
+	            3:
+	                #excuted := FALSE;
+	                #stateInternal := 0;
+	                #stateExternal := 0;
+	                #passed := TRUE;
+	        END_CASE;
+	END_CASE;
+	#prevTestFunction := "testFunction";
+END_FUNCTION_BLOCK
+

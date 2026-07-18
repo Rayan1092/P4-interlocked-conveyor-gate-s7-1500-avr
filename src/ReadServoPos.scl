@@ -1,0 +1,14 @@
+﻿FUNCTION "ReadServoPos" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+
+BEGIN
+	IF BOOL_TO_INT("limitSwitchVal") + BOOL_TO_INT(NOT "ultraVal") = 2 THEN
+	    "servoPos" := 1;
+	ELSIF BOOL_TO_INT(NOT "limitSwitchVal") + BOOL_TO_INT("ultraVal") = 2 THEN
+	    "servoPos" := 2;
+	ELSE
+	    "servoPos" := 0;
+	END_IF;
+END_FUNCTION
+
